@@ -1,0 +1,1 @@
+15 * * * * root python /update_cloudflare.py -u
