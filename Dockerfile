@@ -11,8 +11,8 @@ ADD requirements.txt /requirements.txt
 RUN pip install -U pip
 RUN pip install --no-cache-dir -r /requirements.txt
 
-# Add secrets file
-ADD secrets.py /secrets.py
+# Env
+ADD env.py /env.py
 
 # Add crontab file in the cron directory
 ADD crontab /etc/cron.d/simple-cron
@@ -28,4 +28,4 @@ RUN chmod 0644 /etc/cron.d/simple-cron
 RUN touch /var/log/cron.log
 
 # Run the command on container startup
-CMD cron && tail -f /var/log/cron.log
+CMD cron && tail -f /var/log/cron.log && source /env/environment

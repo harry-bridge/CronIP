@@ -3,8 +3,9 @@ import requests
 import subprocess
 from datetime import datetime
 import json
+from pprint import pprint
 
-from secrets import *
+from env import *
 
 # Headers to go with API requests
 headers = {
@@ -12,6 +13,7 @@ headers = {
 	'X-Auth-Key': api_key,
 	'X-Auth-Email': api_email,
 }
+
 
 def get_telegram_updates():
 	url = bot_url + '/getUpdates'
