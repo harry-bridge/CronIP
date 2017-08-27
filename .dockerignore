@@ -1,5 +1,7 @@
-.idea
-*.pyc
+.idea/*
 .DS_Store
+.git
+
 venv/*
+*.pyc
 secrets.sh
