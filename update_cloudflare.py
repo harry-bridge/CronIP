@@ -73,14 +73,15 @@ def detail_dns():
 
 
 if __name__ == '__main__':
-	if len(sys.argv) > 1 and ('-l' in sys.argv):
-		list_dns()
+	if len(sys.argv) > 1:
+		if '-l' in sys.argv:
+			list_dns()
 
-	if len(sys.argv) > 1 and ('-u' in sys.argv):
-		update_dns()
+		if '-u' in sys.argv:
+			update_dns()
 
-	if len(sys.argv) > 1 and ('-d' in sys.argv):
-		detail_dns()
+		if '-d' in sys.argv:
+			detail_dns()
 
-	if len(sys.argv) > 1 and ('-t' in sys.argv):
-		get_telegram_updates()
+		if '-t' in sys.argv:
+			get_telegram_updates()
