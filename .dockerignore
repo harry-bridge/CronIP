@@ -4,4 +4,4 @@
 
 venv/*
 *.pyc
-secrets.sh
+cronip-env

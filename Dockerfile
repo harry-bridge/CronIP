@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM resin/raspberrypi3-python
 
 # Install cron
 RUN apt-get update
@@ -28,4 +28,4 @@ RUN chmod 0644 /etc/cron.d/simple-cron
 RUN touch /var/log/cron.log
 
 # Run the command on container startup
-CMD cron && tail -f /var/log/cron.log && source /env/environment
+CMD cron && tail -f /var/log/cron.log && source /etc/environment
