@@ -1,87 +1,68 @@
-import sys
+#!/usr/bin/env python3
+
+import os
 import requests
-import subprocess
 from datetime import datetime
-import json
-from pprint import pprint
+import logzero
+import logging
 
-from env import *
+import env
+# import env_dev as env
 
-# Headers to go with API requests
-headers = {
-	'Content-Type': 'application/json',
-	'X-Auth-Key': api_key,
-	'X-Auth-Email': api_email,
-}
+from cloudflare_api import CloudflareApi
 
 
-def get_telegram_updates():
-	url = bot_url + '/getUpdates'
-	print requests.get(url).text
+class UpdateDns:
+    zone_name = 'hjb.io'
+    record_name = 'home.hjb.io'
 
+    last_check_date = None
+    zone_id = None
+    dns_id = None
 
-def update_dns():
-	current_ip = requests.get('http://ip.42.pl/raw').text
-	output = str(datetime.now()) + ': '
+    api = None
 
-	# Find current configured url from DNS
-	url = '{}/zones/{}/dns_records/{}'.format(base_url, zone_id, dns_id)
+    bot_url = "https://api.telegram.org/bot{}".format(env.bot_key)
 
-	req = requests.get(url, headers=headers).json()['result']
+    logger = None
 
-	old_ip = {
-		'content': req['content'],
-		'type': req['type'],
-		'name': req['name'],
-	} 
+    def __init__(self):
+        self.logger = logzero.logger
+        if os.environ.get('PRODUCTION', 0):
+            logzero.loglevel(logging.INFO)
+        else:
+            logzero.loglevel(logging.DEBUG)
 
-	# Check if ip has changed, update if so
-	if old_ip['content'] != current_ip:
+        self.api = CloudflareApi(self.logger)
 
-		payload = {
-			'content': current_ip,
-			'type': old_ip['type'],
-			'name': old_ip['name']
-		}
+    def send_telegram_message(self, message):
 
-		req = requests.put(url, data=json.dumps(payload), headers=headers)
+        url = self.bot_url + '/sendMessage?chat_id={}&text={}'.format(env.chat_id, message)
+        requests.get(url)
 
-		output += 'Public IP change detected, DNS updated automatically to {}, with response {}'.format(current_ip, req.status_code)
+    def on_execute(self):
+        now = (str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        self.logger.info("Update started on: {}".format(now))
 
-		url = bot_url + '/sendMessage?chat_id={}&text={}'.format(chat_id, output)
-		requests.get(url)
+        if not self.last_check_date or self.last_check_date != datetime.now().date():
+            self.logger.debug("Updating DNS and Zone IDs")
+            self.last_check_date = datetime.now().date()
 
-	else:
-		output += 'No change detected'
+            # Find zone id
+            self.zone_id = self.api.find_zone_id(self.zone_name)
+            self.logger.debug("Zone ID: {}".format(self.zone_id))
 
-	cmd = 'echo {} >> /var/log/cron.log 2>&1'.format(output)
-	subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+            # Find DNS id
+            self.dns_id = self.api.find_dns_id(self.zone_id, self.record_name)
+            self.logger.debug("DNS ID: {}".format(self.dns_id))
 
+        message = self.api.update_dns(self.zone_id, self.dns_id)
+        self.logger.debug("Message: {}".format(message))
 
-def list_dns():
-	url = '{}/zones/{}/dns_records/'.format(base_url, zone_id)
-
-	req = requests.get(url, headers=headers).json()['result']
-	pprint(req)
-
-
-def detail_dns():
-	url = '{}/zones/{}/dns_records/{}'.format(base_url, zone_id, dns_id)
-
-	req = requests.get(url, headers=headers).json()['result']
-	pprint(req)
+        if message:
+            self.send_telegram_message(message)
 
 
 if __name__ == '__main__':
-	if len(sys.argv) > 1:
-		if '-l' in sys.argv:
-			list_dns()
-
-		if '-u' in sys.argv:
-			update_dns()
-
-		if '-d' in sys.argv:
-			detail_dns()
-
-		if '-t' in sys.argv:
-			get_telegram_updates()
+    app = UpdateDns()
+    app.on_execute()

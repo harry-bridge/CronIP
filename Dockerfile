@@ -1,31 +1,32 @@
-FROM resin/raspberrypi3-python
+FROM balenalib/raspberrypi3-python:3.8.1-buster
 
 # Install cron
 RUN apt-get update
-RUN apt-get install cron
-RUN apt-get --yes install python
-RUN apt-get --yes install python-pip
+RUN apt-get -y install cron
 
-# Install requirements
-ADD requirements.txt /requirements.txt
-RUN pip install -U pip
-RUN pip install --no-cache-dir -r /requirements.txt
+# copy code over
+RUN mkdir -p /code
+COPY . /code
+WORKDIR /code
 
-# Env
-ADD env.py /env.py
+# Install python requirements
+RUN pip3 install -U pip
+RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Add crontab file in the cron directory
-ADD crontab /etc/cron.d/simple-cron
+# Copy entrypoint script
+COPY entrypoint.sh /usr/local/bin/
+# backwards compatability
+RUN ln -s /usr/local/bin/docker-entrypoint.sh /
 
-# Add python script and grant execution rights
-ADD update_cloudflare.py /update_cloudflare.py
-RUN chmod +x /update_cloudflare.py 
+# Add crontab file
+ADD crontab /etc/cron.d/crontab
 
-# Give execution rights on the cron job
-RUN chmod 0644 /etc/cron.d/simple-cron
+# Give execution rights to things
+RUN chmod 0644 /etc/cron.d/crontab
+RUN chmod 0744 /code/update_cloudflare.py
 
 # Create the log file to be able to run tail
 RUN touch /var/log/cron.log
 
 # Run the command on container startup
-CMD cron && tail -f /var/log/cron.log && source /etc/environment
+ENTRYPOINT ["entrypoint.sh"]

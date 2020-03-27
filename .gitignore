@@ -1,6 +1,6 @@
 .idea
 *.pyc
 .DS_Store
-venv/*
-cronip-env
-
+venv/
+_bin/
+env_dev.py

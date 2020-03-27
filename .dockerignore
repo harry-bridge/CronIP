@@ -2,6 +2,7 @@
 .DS_Store
 .git
 
-venv/*
 *.pyc
-cronip-env
+_bin/
+venv/
+env_dev.py
